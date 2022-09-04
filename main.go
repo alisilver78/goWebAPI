@@ -9,6 +9,7 @@ import (
 	"github.com/alisilver78/goWebAPI/handlers"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -37,7 +38,9 @@ func init() {
 func main() {
 	e := echo.New()
 	h := handlers.ProductHandler{Col: col}
-	e.POST("/products", h.CreateProducts)
+
+	e.Pre(middleware.RemoveTrailingSlash())
+	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
 
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))

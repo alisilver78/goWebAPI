@@ -8,8 +8,8 @@ import (
 )
 
 type (
+	//CollectionAPI collection interface
 	CollectionAPI interface {
-		//CollectionAPI collection interface
 		InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	}
 )
