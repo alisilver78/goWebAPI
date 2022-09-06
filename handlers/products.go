@@ -48,6 +48,14 @@ func findProducts(ctx context.Context, collection dbiface.CollectionAPI, q url.V
 	for k, v := range q {
 		filter[k] = v[0]
 	}
+	if filter["_id"] != nil {
+		docID, err := primitive.ObjectIDFromHex(filter["_id"].(string))
+		if err != nil {
+			return products, err
+		}
+		filter["_id"] = docID
+	}
+
 	cursor, err := collection.Find(ctx, bson.M(filter))
 	if err != nil {
 		log.Errorf("Unable to find products: %v", err)
