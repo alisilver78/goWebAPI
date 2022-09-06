@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/alisilver78/goWebAPI/config"
 	"github.com/alisilver78/goWebAPI/handlers"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/labstack/gommon/random"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -65,10 +65,11 @@ func main() {
 	e := echo.New()
 	h := handlers.ProductHandler{Col: col}
 
+	e.Logger.SetLevel(log.ERROR)
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationID)
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
-	e.GET("/products", h.Getproducts)
+	e.GET("/products", h.GetProducts)
 
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
