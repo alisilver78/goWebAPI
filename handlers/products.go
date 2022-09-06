@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/alisilver78/goWebAPI/dbiface"
 	"github.com/labstack/echo/v4"
@@ -41,9 +42,13 @@ func (p *ProductValidator) Validate(i interface{}) error {
 	return p.validator.Struct(i)
 }
 
-func findProducts(ctx context.Context, collection dbiface.CollectionAPI) ([]Product, error) {
+func findProducts(ctx context.Context, collection dbiface.CollectionAPI, q url.Values) ([]Product, error) {
 	var products []Product
-	cursor, err := collection.Find(ctx, bson.M{})
+	filter := make(map[string]interface{})
+	for k, v := range q {
+		filter[k] = v[0]
+	}
+	cursor, err := collection.Find(ctx, bson.M(filter))
 	if err != nil {
 		log.Errorf("Unable to find products: %v", err)
 	}
@@ -55,7 +60,7 @@ func findProducts(ctx context.Context, collection dbiface.CollectionAPI) ([]Prod
 
 // GetProducts gets a list of products
 func (h ProductHandler) GetProducts(c echo.Context) error {
-	products, err := findProducts(context.Background(), h.Col)
+	products, err := findProducts(context.Background(), h.Col, c.QueryParams())
 	if err != nil {
 		return err
 	}
