@@ -39,6 +39,7 @@ func init() {
 
 	db = c.Database(cfg.DBName)
 	col = db.Collection(cfg.CollectionName)
+
 }
 
 func addCorrelationID(next echo.HandlerFunc) echo.HandlerFunc {
@@ -67,6 +68,7 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationID)
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
+	e.GET("/products", h.Getproducts)
 
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
