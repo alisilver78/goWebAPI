@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -109,4 +110,44 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusCreated, IDs)
+}
+
+// UpdateProduct updates a product
+func (h *ProductHandler) UpdateProduct(c echo.Context) error {
+	var product Product
+	c.Echo().Validator = &ProductValidator{validator: v}
+	//finding the product from database
+	docID, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert id: %v", err)
+		return err
+	}
+	filter := bson.M{"_id": docID}
+	res := h.Col.FindOne(context.Background(), filter)
+	if res == nil {
+		return c.JSON(http.StatusNotFound, res)
+	}
+	//decode de document found from database
+	if err := res.Decode(&product); err != nil {
+		log.Errorf("Unable to decode result to product./n%v:%v", product, err)
+		return err
+	}
+	//decode request payload
+	if err = json.NewDecoder(c.Request().Body).Decode(&product); err != nil {
+		log.Errorf("Unable to decode request body to product./n%v:%v", product, err)
+		return err
+	}
+	//validating
+	if err := c.Validate(product); err != nil {
+		log.Errorf("Unable to validate %+v: %v", product, err)
+		return err
+	}
+	//update database
+	_, err = h.Col.UpdateOne(context.Background(), filter, bson.M{"$set": product})
+	if err != nil {
+		log.Errorf("Unable to update database: %v", err)
+		return err
+	}
+
+	return c.JSON(http.StatusOK, product)
 }

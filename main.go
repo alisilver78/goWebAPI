@@ -63,15 +63,15 @@ func addCorrelationID(next echo.HandlerFunc) echo.HandlerFunc {
 
 func main() {
 	e := echo.New()
-	h := handlers.ProductHandler{Col: col}
+	h := &handlers.ProductHandler{Col: col}
 
 	e.Logger.SetLevel(log.ERROR)
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationID)
-	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
 	e.GET("/products", h.GetProducts)
+	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
+	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
 
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
-
 }
