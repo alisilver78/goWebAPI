@@ -116,34 +116,29 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product Product
 	c.Echo().Validator = &ProductValidator{validator: v}
-	//finding the product from database
 	docID, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert id: %v", err)
+		log.Errorf("Unable to convert id param to objectID: %v", err)
 		return err
 	}
-	filter := bson.M{"_id": docID}
-	res := h.Col.FindOne(context.Background(), filter)
-	if res == nil {
-		return c.JSON(http.StatusNotFound, res)
-	}
-	//decode de document found from database
+	//finding the id inside request in database
+	res := h.Col.FindOne(context.Background(), bson.M{"_id": docID})
 	if err := res.Decode(&product); err != nil {
-		log.Errorf("Unable to decode result to product./n%v:%v", product, err)
-		return err
+		log.Errorf("Unable to decode result or product not found: %v", err)
+		return c.JSON(http.StatusNotFound, err)
 	}
 	//decode request payload
-	if err = json.NewDecoder(c.Request().Body).Decode(&product); err != nil {
-		log.Errorf("Unable to decode request body to product./n%v:%v", product, err)
+	if err := json.NewDecoder(c.Request().Body).Decode(&product); err != nil {
+		log.Errorf("Unable to decode request payload: %v", err)
 		return err
 	}
-	//validating
-	if err := c.Validate(product); err != nil {
-		log.Errorf("Unable to validate %+v: %v", product, err)
+	//validating product
+	if err := v.Struct(product); err != nil {
+		log.Errorf("Unable to validate request payload: %v", err)
 		return err
 	}
-	//update database
-	_, err = h.Col.UpdateOne(context.Background(), filter, bson.M{"$set": product})
+	//updating database
+	_, err = h.Col.UpdateOne(context.Background(), bson.M{"_id": docID}, bson.M{"$set": product})
 	if err != nil {
 		log.Errorf("Unable to update database: %v", err)
 		return err
