@@ -45,6 +45,7 @@ func init() {
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	testCode := m.Run()
+	//after test
 	col.Drop(ctx)
 	db.Drop(ctx)
 	os.Exit(testCode)
