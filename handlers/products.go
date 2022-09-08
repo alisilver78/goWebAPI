@@ -43,6 +43,7 @@ func (p *ProductValidator) Validate(i interface{}) error {
 	return p.validator.Struct(i)
 }
 
+// findProducts finds a list of product
 func findProducts(ctx context.Context, collection dbiface.CollectionAPI, q url.Values) ([]Product, error) {
 	var products []Product
 	filter := make(map[string]interface{})
@@ -65,6 +66,22 @@ func findProducts(ctx context.Context, collection dbiface.CollectionAPI, q url.V
 		log.Errorf("Unable to read cursor: %v", err)
 	}
 	return products, nil
+}
+
+// findproduct finds a single product
+func findProduct(c context.Context, id string, collection dbiface.CollectionAPI) (Product, error) {
+	var product Product
+	docId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Errorf("Unable to convert id param to objectID: %v", err)
+		return product, err
+	}
+	res := collection.FindOne(c, bson.M{"_id": docId})
+	if err := res.Decode(&product); err != nil {
+		log.Errorf("Unable to decode result or product not found: %v", err)
+		return product, err
+	}
+	return product, nil
 }
 
 // GetProducts gets a list of products
@@ -116,15 +133,8 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product Product
 	c.Echo().Validator = &ProductValidator{validator: v}
-	docID, err := primitive.ObjectIDFromHex(c.Param("id"))
+	product, err := findProduct(context.Background(), c.Param("id"), h.Col)
 	if err != nil {
-		log.Errorf("Unable to convert id param to objectID: %v", err)
-		return err
-	}
-	//finding the id inside request in database
-	res := h.Col.FindOne(context.Background(), bson.M{"_id": docID})
-	if err := res.Decode(&product); err != nil {
-		log.Errorf("Unable to decode result or product not found: %v", err)
 		return c.JSON(http.StatusNotFound, err)
 	}
 	//decode request payload
@@ -138,7 +148,7 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 		return err
 	}
 	//updating database
-	_, err = h.Col.UpdateOne(context.Background(), bson.M{"_id": docID}, bson.M{"$set": product})
+	_, err = h.Col.UpdateOne(context.Background(), bson.M{"_id": c.Param("id")}, bson.M{"$set": product})
 	if err != nil {
 		log.Errorf("Unable to update database: %v", err)
 		return err
