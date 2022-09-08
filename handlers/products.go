@@ -151,11 +151,13 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 	c.Echo().Validator = &ProductValidator{validator: v}
 	if err := c.Bind(&products); err != nil {
 		log.Errorf("Unable to bind: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to bind.")
+
 	}
 	for _, product := range products {
 		if err := c.Validate(product); err != nil {
 			log.Errorf("Unable to validate %+v: %v", product, err)
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate.")
 		}
 	}
 	IDs, err := insertProducts(context.Background(), products, h.Col)
@@ -173,17 +175,17 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	product, err := findProduct(context.Background(), c.Param("id"), h.Col)
 	if err != nil {
 		log.Errorf("Unable to find the product: %v", err)
-		return c.JSON(http.StatusNotFound, err)
+		return err
 	}
 	//decode request payload
 	if err := json.NewDecoder(c.Request().Body).Decode(&product); err != nil {
 		log.Errorf("Unable to decode request payload: %v", err)
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, "Unable to decode request payload.")
 	}
 	//validating product
-	if err := v.Struct(product); err != nil {
+	if err := c.Validate(product); err != nil {
 		log.Errorf("Unable to validate request payload: %v", err)
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate request payload.")
 	}
 	//updating database
 	if _, err := h.Col.UpdateOne(context.Background(), bson.M{"_id": c.Param("id")}, bson.M{"$set": product}); err != nil {
