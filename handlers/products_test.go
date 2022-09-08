@@ -178,37 +178,4 @@ func TestProduct(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, int64(1), deCount)
 	})
-
-	// t.Run("testing product", func(t *testing.T) {
-	// 	body := `
-	// 	[{
-	// 		"product_name":"Google Nest Thermostat",
-	// 		"price":98,
-	// 		"currency":"USD",
-	// 		"vendor":"Google",
-	// 		"quantity":300,
-	// 		"accessories":["wire", "subscription" ]
-	// 	}]`
-	// 	req := httptest.NewRequest("POST", "/producs", strings.NewReader(body))
-	// 	res := httptest.NewRecorder()
-	// 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	// 	e := echo.New()
-	// 	c := e.NewContext(req, res)
-	// 	h.Col = col
-	// 	err := h.CreateProducts(c)
-	// 	assert.Nil(t, err)
-	// 	assert.Equal(t, http.StatusCreated, res.Code)
-	// })
-
-	// t.Run("get products", func(t *testing.T) {
-	// 	req := httptest.NewRequest("GET", "/producs", nil)
-	// 	res := httptest.NewRecorder()
-	// 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	// 	e := echo.New()
-	// 	c := e.NewContext(req, res)
-	// 	h.Col = col
-	// 	err := h.GetProducts(c)
-	// 	assert.Nil(t, err)
-	// 	assert.Equal(t, http.StatusOK, res.Code)
-	// })
 }
