@@ -84,14 +84,47 @@ func findProduct(c context.Context, id string, collection dbiface.CollectionAPI)
 	return product, nil
 }
 
-// GetProducts gets a list of products
+// GetProducts gets list of products
 func (h ProductHandler) GetProducts(c echo.Context) error {
 	products, err := findProducts(context.Background(), h.Col, c.QueryParams())
 	if err != nil {
 		return err
 	}
-
 	return c.JSON(http.StatusOK, products)
+}
+
+// GetProduct gets a single product
+func (h *ProductHandler) GetProduct(c echo.Context) error {
+	product, err := findProduct(context.Background(), c.Param("id"), h.Col)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, product)
+}
+
+// deleteProduct deletes a single product for DeleteProduct
+func deleteProduct(c context.Context, id string, collection dbiface.CollectionAPI) (int64, error) {
+	docID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Errorf("Unable to convert string id to objectID: %v", err)
+		return 0, err
+	}
+	delCount, err := collection.DeleteOne(context.Background(), bson.M{"_id": docID})
+	if err != nil {
+		log.Errorf("Unable to delete product: %v", err)
+		return 0, err
+	}
+	return delCount.DeletedCount, nil
+}
+
+// DeleteProduct deletes a single product
+func (h *ProductHandler) DeleteProduct(c echo.Context) error {
+	delCount, err := deleteProduct(context.Background(), c.Param("id"), h.Col)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, delCount)
 }
 
 func insertProducts(ctx context.Context, products []Product, collection dbiface.CollectionAPI) ([]interface{}, error) {
@@ -133,6 +166,7 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product Product
 	c.Echo().Validator = &ProductValidator{validator: v}
+	//finding product
 	product, err := findProduct(context.Background(), c.Param("id"), h.Col)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, err)
