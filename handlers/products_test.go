@@ -39,7 +39,7 @@ func init() {
 	}
 
 	db = c.Database(cfg.DBName)
-	col = db.Collection(cfg.CollectionName)
+	col = db.Collection(cfg.ProductsCollection)
 }
 
 func TestMain(m *testing.M) {

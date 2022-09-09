@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/labstack/gommon/random"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -20,10 +21,11 @@ const (
 )
 
 var (
-	c   *mongo.Client
-	db  *mongo.Database
-	col *mongo.Collection
-	cfg config.Properties
+	c        *mongo.Client
+	db       *mongo.Database
+	prodcol  *mongo.Collection
+	userscol *mongo.Collection
+	cfg      config.Properties
 )
 
 func init() {
@@ -38,8 +40,21 @@ func init() {
 	}
 
 	db = c.Database(cfg.DBName)
-	col = db.Collection(cfg.CollectionName)
+	prodcol = db.Collection(cfg.ProductsCollection)
+	userscol = db.Collection(cfg.UsersCollection)
 
+	IsUserIndexUnique := true
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{"username", 1}},
+		Options: &options.IndexOptions{
+			Unique: &IsUserIndexUnique,
+		},
+	}
+
+	_, err = userscol.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatalf("Unable to create an index: %v", err)
+	}
 }
 
 func addCorrelationID(next echo.HandlerFunc) echo.HandlerFunc {
@@ -63,13 +78,14 @@ func addCorrelationID(next echo.HandlerFunc) echo.HandlerFunc {
 
 func main() {
 	e := echo.New()
-	h := &handlers.ProductHandler{Col: col}
+	h := &handlers.ProductHandler{Col: prodcol}
+	uh := &handlers.UsersHandler{Col: userscol}
 
 	e.Logger.SetLevel(log.ERROR)
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationID)
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: `{"time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}",` +
+		Format: `{"time":"${time_rfc3339_nano}","${header:X-Correlation-ID}","id":"${id}","remote_ip":"${remote_ip}",` +
 			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
 			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
@@ -80,6 +96,7 @@ func main() {
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
 
+	e.POST("/users", uh.CreateUser, middleware.BodyLimit("1M"))
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
 }
