@@ -110,7 +110,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 		log.Errorf("User does not exist: %v", user.Email)
 		return storedUser, echo.NewHTTPError(http.StatusNotFound, "User does not exist. ")
 	}
-	if !isCredValid(storedUser.Email, user.Email) {
+	if !isCredValid(storedUser.Password, user.Password) {
 		return storedUser, echo.NewHTTPError(http.StatusUnauthorized, "Credendtials not valid")
 	}
 	return User{Email: storedUser.Email}, nil
