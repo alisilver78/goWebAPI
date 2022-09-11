@@ -84,12 +84,7 @@ func main() {
 	e.Logger.SetLevel(log.ERROR)
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationID)
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: `{"time":"${time_rfc3339_nano}","${header:X-Correlation-ID}","id":"${id}","remote_ip":"${remote_ip}",` +
-			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
-			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
-			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
-	}))
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{Format: config.LoggerConfigFormat}))
 	e.GET("/products", h.GetProducts)
 	e.GET("/products/:id", h.GetProduct)
 	e.DELETE("/products/:id", h.DeleteProduct)
@@ -97,6 +92,7 @@ func main() {
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
 
 	e.POST("/users", uh.CreateUser, middleware.BodyLimit("1M"))
+	e.POST("/auth", uh.AthnUser)
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
 }

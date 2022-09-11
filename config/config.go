@@ -9,4 +9,10 @@ type Properties struct {
 	DBName             string `env:"DB_NAME" env-default:"GoWebAPI"`
 	ProductsCollection string `env:"PRODUCTS_COL_NAME" env-default:"products"`
 	UsersCollection    string `env:"USERS_COL_NAME" env-default:"users"`
+	JwtTokenSecret     string `env:"JWT_TOKEN_SECRET" env-default:"replacethis"`
 }
+
+var LoggerConfigFormat = `{"time":"${time_rfc3339_nano}","${header:X-Correlation-ID}","id":"${id}","remote_ip":"${remote_ip}",` +
+	`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+	`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+	`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n"
