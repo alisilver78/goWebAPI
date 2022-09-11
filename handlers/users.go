@@ -24,7 +24,7 @@ var (
 // User represents a user
 type User struct {
 	Email    string `json:"username" bson:"username" validate:"required,email"`
-	Password string `json:"password" bson:"password,omitempty" validate:"required,min=8,max=300"`
+	Password string `json:"password,omitempty" bson:"password" validate:"required,min=8,max=300"`
 }
 
 // UsersHndler user handler struct
@@ -127,7 +127,8 @@ func createToken(email string) (string, *echo.HTTPError) {
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	token, err := at.SignedString([]byte(confg.JwtTokenSecret))
+	token, err := at.SigningString()
+	//token, err := at.SignedString([]byte(confg.JwtTokenSecret))
 	if err != nil {
 		log.Errorf("Unable to generate token: %v", err)
 		return "", echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate token. ")
