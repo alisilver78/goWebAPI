@@ -84,17 +84,24 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 		log.Errorf("Unable to insert user: %v", err)
 		return err
 	}
+	token, err := createToken(user.Email)
+	if err != nil {
+		log.Errorf("Unable to create token: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
+	}
+	c.Response().Header().Set("x-auth-token", "Bearer "+token)
+
 	return c.JSON(http.StatusCreated, user.Email)
 }
 
-func isCredValid(su, ru string) bool {
+func isCredValid(su, ru string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(su), []byte(ru))
-	//if did not match return false
+	//if did not match return error
 	if err != nil {
 
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 // authenticateUser athenticates a user
@@ -110,7 +117,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 		log.Errorf("User does not exist: %v", user.Email)
 		return storedUser, echo.NewHTTPError(http.StatusNotFound, "User does not exist. ")
 	}
-	if !isCredValid(storedUser.Password, user.Password) {
+	if err := isCredValid(storedUser.Password, user.Password); err != nil {
 		return storedUser, echo.NewHTTPError(http.StatusUnauthorized, "Credendtials not valid")
 	}
 	return User{Email: storedUser.Email}, nil
@@ -158,7 +165,7 @@ func (h *UsersHandler) AthnUser(c echo.Context) error {
 		log.Errorf("Unable to create token: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
 	}
-	c.Response().Header().Set("x-auth-token", token)
+	c.Response().Header().Set("x-auth-token", "Bearer "+token)
 
 	return c.JSON(http.StatusOK, User{Email: user.Email})
 }
