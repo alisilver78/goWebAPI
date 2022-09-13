@@ -7,7 +7,7 @@ import (
 
 	"github.com/alisilver78/goWebAPI/config"
 	"github.com/alisilver78/goWebAPI/dbiface"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	confg config.Properties
+	props config.Properties
 )
 
 // User represents a user
@@ -89,7 +89,7 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 		log.Errorf("Unable to create token: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
 	}
-	c.Response().Header().Set("x-auth-token", "Bearer "+token)
+	c.Response().Header().Set("x-auth-token", token)
 
 	return c.JSON(http.StatusCreated, user.Email)
 }
@@ -98,7 +98,7 @@ func isCredValid(su, ru string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(su), []byte(ru))
 	//if did not match return error
 	if err != nil {
-
+		log.Errorf("Password did not match: %v", err)
 		return err
 	}
 	return nil
@@ -118,6 +118,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 		return storedUser, echo.NewHTTPError(http.StatusNotFound, "User does not exist. ")
 	}
 	if err := isCredValid(storedUser.Password, user.Password); err != nil {
+		log.Errorf("Credendtials not valid: %v", err)
 		return storedUser, echo.NewHTTPError(http.StatusUnauthorized, "Credendtials not valid")
 	}
 	return User{Email: storedUser.Email}, nil
@@ -125,7 +126,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 
 // createToken creates a jwt token
 func createToken(email string) (string, *echo.HTTPError) {
-	if err := cleanenv.ReadEnv(&confg); err != nil {
+	if err := cleanenv.ReadEnv(&props); err != nil {
 		log.Fatalf("Unable to read configuration: %v", err)
 	}
 	claims := jwt.MapClaims{}
@@ -133,9 +134,10 @@ func createToken(email string) (string, *echo.HTTPError) {
 	claims["user_id"] = email
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
-	at := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	token, err := at.SigningString()
-	//token, err := at.SignedString([]byte(confg.JwtTokenSecret))
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// jwtKey := []byte("adgrlbknoakdamb")
+	// token, err := at.SignedString(jwtKey)
+	token, err := at.SignedString([]byte(props.JwtTokenSecret))
 	if err != nil {
 		log.Errorf("Unable to generate token: %v", err)
 		return "", echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate token. ")
@@ -165,7 +167,7 @@ func (h *UsersHandler) AthnUser(c echo.Context) error {
 		log.Errorf("Unable to create token: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
 	}
-	c.Response().Header().Set("x-auth-token", "Bearer "+token)
+	c.Response().Header().Set("x-auth-token", token)
 
 	return c.JSON(http.StatusOK, User{Email: user.Email})
 }

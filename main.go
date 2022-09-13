@@ -81,7 +81,7 @@ func main() {
 	h := &handlers.ProductHandler{Col: prodcol}
 	uh := &handlers.UsersHandler{Col: userscol}
 	jwtMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey:  cfg.JwtTokenSecret,
+		SigningKey:  []byte(cfg.JwtTokenSecret),
 		TokenLookup: "header:x-auth-token",
 	})
 

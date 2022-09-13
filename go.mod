@@ -8,6 +8,7 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/ilyakaznacheev/cleanenv v1.3.0 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
