@@ -25,6 +25,7 @@ var (
 type User struct {
 	Email    string `json:"username" bson:"username" validate:"required,email"`
 	Password string `json:"password,omitempty" bson:"password" validate:"required,min=8,max=300"`
+	IsAdmin  bool   `json:"isadmin,omitempty" bson:"isadmin"`
 }
 
 // UsersHndler user handler struct
@@ -84,7 +85,7 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 		log.Errorf("Unable to insert user: %v", err)
 		return err
 	}
-	token, err := createToken(user.Email)
+	token, err := user.createToken()
 	if err != nil {
 		log.Errorf("Unable to create token: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
@@ -125,13 +126,13 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 }
 
 // createToken creates a jwt token
-func createToken(email string) (string, *echo.HTTPError) {
+func (u User) createToken() (string, *echo.HTTPError) {
 	if err := cleanenv.ReadEnv(&props); err != nil {
 		log.Fatalf("Unable to read configuration: %v", err)
 	}
 	claims := jwt.MapClaims{}
-	claims["athurized"] = true
-	claims["user_id"] = email
+	claims["athurized"] = u.IsAdmin
+	claims["user_id"] = u.Email
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -162,7 +163,7 @@ func (h *UsersHandler) AthnUser(c echo.Context) error {
 		log.Errorf("Unable to athenticate user: %v", err)
 		return err
 	}
-	token, err := createToken(user.Email)
+	token, err := user.createToken()
 	if err != nil {
 		log.Errorf("Unable to create token: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
