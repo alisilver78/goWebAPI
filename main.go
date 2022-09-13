@@ -45,7 +45,7 @@ func init() {
 
 	IsUserIndexUnique := true
 	indexModel := mongo.IndexModel{
-		Keys: bson.D{{"username", 1}},
+		Keys: bson.D{{Key: "username", Value: 1}},
 		Options: &options.IndexOptions{
 			Unique: &IsUserIndexUnique,
 		},
@@ -80,6 +80,10 @@ func main() {
 	e := echo.New()
 	h := &handlers.ProductHandler{Col: prodcol}
 	uh := &handlers.UsersHandler{Col: userscol}
+	jwtMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:  cfg.JwtTokenSecret,
+		TokenLookup: "header:x-auth-token",
+	})
 
 	e.Logger.SetLevel(log.ERROR)
 	e.Pre(middleware.RemoveTrailingSlash())
@@ -87,9 +91,10 @@ func main() {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{Format: config.LoggerConfigFormat}))
 	e.GET("/products", h.GetProducts)
 	e.GET("/products/:id", h.GetProduct)
-	e.DELETE("/products/:id", h.DeleteProduct)
-	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
-	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
+
+	e.DELETE("/products/:id", h.DeleteProduct, jwtMiddleware)
+	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"), jwtMiddleware)
+	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"), jwtMiddleware)
 
 	e.POST("/users", uh.CreateUser, middleware.BodyLimit("1M"))
 	e.POST("/auth", uh.AthnUser)
