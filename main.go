@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/alisilver78/goWebAPI/config"
 	"github.com/alisilver78/goWebAPI/handlers"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -76,6 +78,26 @@ func addCorrelationID(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// adminMiddleware checks is user admin or not
+func adminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.Request().Header.Get("x-auth-token")
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(token, claims, func(*jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtTokenSecret), nil
+		})
+		if err != nil {
+			log.Errorf("Unable to parse jwt token with claims: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Unable to parse jwt token with claims")
+		}
+		boolClaims := claims["authorized"].(bool)
+		if !boolClaims {
+			return echo.NewHTTPError(http.StatusForbidden, "This user do not have required permissions")
+		}
+		return next(c)
+	}
+}
+
 func main() {
 	e := echo.New()
 	h := &handlers.ProductHandler{Col: prodcol}
@@ -92,7 +114,7 @@ func main() {
 	e.GET("/products", h.GetProducts)
 	e.GET("/products/:id", h.GetProduct)
 
-	e.DELETE("/products/:id", h.DeleteProduct, jwtMiddleware)
+	e.DELETE("/products/:id", h.DeleteProduct, jwtMiddleware, adminMiddleware)
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"), jwtMiddleware)
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"), jwtMiddleware)
 

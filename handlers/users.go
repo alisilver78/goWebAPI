@@ -136,8 +136,6 @@ func (u User) createToken() (string, *echo.HTTPError) {
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// jwtKey := []byte("adgrlbknoakdamb")
-	// token, err := at.SignedString(jwtKey)
 	token, err := at.SignedString([]byte(props.JwtTokenSecret))
 	if err != nil {
 		log.Errorf("Unable to generate token: %v", err)
