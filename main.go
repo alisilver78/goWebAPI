@@ -87,10 +87,11 @@ func adminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return []byte(cfg.JwtTokenSecret), nil
 		})
 		if err != nil {
-			log.Errorf("Unable to parse jwt token with claims: %v", err)
+			log.Errorf("Unable to parse jwt token with claims in middleware: %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Unable to parse jwt token with claims")
 		}
 		boolClaims := claims["authorized"].(bool)
+		log.Printf("boolClaims: %v", claims["authorized"].(bool))
 		if !boolClaims {
 			return echo.NewHTTPError(http.StatusForbidden, "This user do not have required permissions")
 		}
@@ -119,7 +120,7 @@ func main() {
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"), jwtMiddleware)
 
 	e.POST("/users", uh.CreateUser, middleware.BodyLimit("1M"))
-	e.POST("/auth", uh.AthnUser)
+	e.POST("/auth", uh.AthnUser, middleware.BodyLimit("1M"))
 	e.Logger.Infof("listening on: %s:%s", cfg.Host, cfg.Port)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)))
 }

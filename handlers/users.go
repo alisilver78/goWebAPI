@@ -110,7 +110,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 	var storedUser User
 	res := collection.FindOne(ctx, bson.M{"username": user.Email})
 	err := res.Decode(&storedUser)
-	if err != nil && err == mongo.ErrNoDocuments {
+	if err != nil && err != mongo.ErrNoDocuments {
 		log.Errorf("Unable to decode retrived user: %v", err)
 		return storedUser, echo.NewHTTPError(http.StatusUnprocessableEntity, "Unable to decode retrived user. ")
 	}
@@ -122,7 +122,7 @@ func authenticateUser(ctx context.Context, user User, collection dbiface.Collect
 		log.Errorf("Credendtials not valid: %v", err)
 		return storedUser, echo.NewHTTPError(http.StatusUnauthorized, "Credendtials not valid")
 	}
-	return User{Email: storedUser.Email}, nil
+	return storedUser, nil
 }
 
 // createToken creates a jwt token
@@ -131,7 +131,7 @@ func (u User) createToken() (string, *echo.HTTPError) {
 		log.Fatalf("Unable to read configuration: %v", err)
 	}
 	claims := jwt.MapClaims{}
-	claims["athurized"] = u.IsAdmin
+	claims["authorized"] = u.IsAdmin
 	claims["user_id"] = u.Email
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
