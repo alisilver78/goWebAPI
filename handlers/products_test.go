@@ -4,27 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/alisilver78/goWebAPI/config"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-var (
-	c   *mongo.Client
-	db  *mongo.Database
-	col *mongo.Collection
-	cfg config.Properties
-	h   ProductHandler
 )
 
 func init() {
@@ -40,15 +30,6 @@ func init() {
 
 	db = c.Database(cfg.DBName)
 	col = db.Collection(cfg.ProductsCollection)
-}
-
-func TestMain(m *testing.M) {
-	ctx := context.Background()
-	testCode := m.Run()
-	//after test
-	col.Drop(ctx)
-	db.Drop(ctx)
-	os.Exit(testCode)
 }
 
 // integration test
