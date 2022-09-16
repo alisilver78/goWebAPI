@@ -11,11 +11,6 @@ import (
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gopkg.in/go-playground/validator.v9"
-)
-
-var (
-	v = validator.New()
 )
 
 // product define an electronic product
@@ -33,14 +28,6 @@ type Product struct {
 // ProductHandler is a product handler
 type ProductHandler struct {
 	Col dbiface.CollectionAPI
-}
-
-type ProductValidator struct {
-	validator *validator.Validate
-}
-
-func (p *ProductValidator) Validate(i interface{}) error {
-	return p.validator.Struct(i)
 }
 
 // findProducts finds a list of product
@@ -148,7 +135,7 @@ func insertProducts(ctx context.Context, products []Product, collection dbiface.
 // CreateProducts creates products
 func (h *ProductHandler) CreateProducts(c echo.Context) error {
 	var products []Product
-	c.Echo().Validator = &ProductValidator{validator: v}
+	c.Echo().Validator = &productValidator{validator: v}
 	if err := c.Bind(&products); err != nil {
 		log.Errorf("Unable to bind: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to bind.")
@@ -170,7 +157,7 @@ func (h *ProductHandler) CreateProducts(c echo.Context) error {
 // UpdateProduct updates a product
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product Product
-	c.Echo().Validator = &ProductValidator{validator: v}
+	c.Echo().Validator = &productValidator{validator: v}
 	//finding product
 	product, err := findProduct(context.Background(), c.Param("id"), h.Col)
 	if err != nil {

@@ -14,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 var (
@@ -31,15 +30,6 @@ type User struct {
 // UsersHndler user handler struct
 type UsersHandler struct {
 	Col dbiface.CollectionAPI
-}
-
-// userValidator validate struct
-type userValidator struct {
-	validator *validator.Validate
-}
-
-func (u *userValidator) Validate(i interface{}) error {
-	return u.validator.Struct(i)
 }
 
 // InsertUser inserts a user
