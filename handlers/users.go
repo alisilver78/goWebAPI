@@ -20,6 +20,11 @@ var (
 	props config.Properties
 )
 
+// errorMassage is an error struct
+type errorMassage struct {
+	Message string `json:"message"`
+}
+
 // User represents a user
 type User struct {
 	Email    string `json:"username" bson:"username" validate:"required,email"`
@@ -64,21 +69,21 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 	c.Echo().Validator = &userValidator{validator: v}
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind to user struct: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "Unable to parse the request payload")
+		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to parse the request payload"})
 	}
 	if err := c.Validate(&user); err != nil {
-		log.Errorf("Unable to bind to user struct: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate request payload")
+		log.Errorf("Unable to validate user struct: %v", err)
+		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to validate request payload"})
 	}
 	_, err := insertUser(context.Background(), user, h.Col)
 	if err != nil {
 		log.Errorf("Unable to insert user: %v", err)
-		return err
+		return c.JSON(err.Code, errorMassage{Message: "Unable to insert user"})
 	}
 	token, err := user.createToken()
 	if err != nil {
 		log.Errorf("Unable to create token: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
+		return c.JSON(err.Code, errorMassage{Message: "Unable to create a token"})
 	}
 	c.Response().Header().Set("x-auth-token", token)
 
@@ -140,21 +145,21 @@ func (h *UsersHandler) AthnUser(c echo.Context) error {
 	c.Echo().Validator = &userValidator{validator: v}
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind request payload. ")
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Unable to bind request payload. ")
+		return c.JSON(http.StatusUnprocessableEntity, errorMassage{Message: "Unable to bind request payload"})
 	}
 	if err := c.Validate(user); err != nil {
 		log.Errorf("Unable to validate request payload. ")
-		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate request payload. ")
+		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to validate request payload"})
 	}
 	user, err := authenticateUser(context.Background(), user, h.Col)
 	if err != nil {
 		log.Errorf("Unable to athenticate user: %v", err)
-		return err
+		return c.JSON(err.Code, errorMassage{Message: "Unable to athenticate user"})
 	}
 	token, err := user.createToken()
 	if err != nil {
 		log.Errorf("Unable to create token: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to create a token")
+		return c.JSON(http.StatusInternalServerError, errorMassage{Message: "Unable to create a token"})
 	}
 	c.Response().Header().Set("x-auth-token", token)
 
