@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,28 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-func init() {
-	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		log.Fatalf("Configuration cannot be read: %v", err)
-	}
-	connectURI := fmt.Sprintf("mongodb://%s:%s", cfg.DBHost, cfg.DPPort)
-	var err error
-	c, err = mongo.Connect(context.Background(), options.Client().ApplyURI(connectURI))
-	if err != nil {
-		log.Fatalf("Unable connect to database: %v", err)
-	}
-
-	db = c.Database(cfg.DBName)
-	col = db.Collection(cfg.ProductsCollection)
-}
 
 // integration test
 func TestProduct(t *testing.T) {

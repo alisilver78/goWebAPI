@@ -36,6 +36,7 @@ func init() {
 
 	db = c.Database(cfg.DBName)
 	col = db.Collection(cfg.ProductsCollection)
+	usersCol = db.Collection(cfg.UsersCollection)
 }
 
 func TestMain(m *testing.M) {
@@ -43,6 +44,7 @@ func TestMain(m *testing.M) {
 	testCode := m.Run()
 	//after test
 	col.Drop(ctx)
+	usersCol.Drop(ctx)
 	db.Drop(ctx)
 	os.Exit(testCode)
 }

@@ -20,8 +20,8 @@ var (
 	props config.Properties
 )
 
-// errorMassage is an error struct
-type errorMassage struct {
+// errorMessage is an error struct
+type errorMessage struct {
 	Message string `json:"message"`
 }
 
@@ -38,27 +38,27 @@ type UsersHandler struct {
 }
 
 // InsertUser inserts a user
-func insertUser(ctx context.Context, user User, collection dbiface.CollectionAPI) (interface{}, *echo.HTTPError) {
+func insertUser(ctx context.Context, user User, collection dbiface.CollectionAPI, c echo.Context) (interface{}, error) {
 	var newuser User
 	res := collection.FindOne(ctx, bson.M{"username": user.Email})
 	if err := res.Decode(&newuser); err != nil && err != mongo.ErrNoDocuments {
 		log.Errorf("Unable to decode retrived user: %v", err)
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Unable to decode retrived user")
+		return nil, c.JSON(http.StatusInternalServerError, errorMessage{Message: "Unable to decode retrived user"})
 	}
 	if newuser.Email != "" {
 		log.Errorf("User by %v already exists", newuser.Email)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "User already exists")
+		return nil, c.JSON(http.StatusBadRequest, errorMessage{Message: "User already exists"})
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 8)
 	if err != nil {
-		log.Errorf("Unable to process the error: %v", err)
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Unable to process the error")
+		log.Errorf("Unable to hash the password: %v", err)
+		return nil, c.JSON(http.StatusInternalServerError, errorMessage{Message: "Unable to hash the password"})
 	}
 	user.Password = string(hashedPassword)
 	insertRes, err := collection.InsertOne(ctx, user)
 	if err != nil {
 		log.Errorf("Unable to create user: %v", err)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Unable to create user")
+		return nil, c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to create user"})
 	}
 	return insertRes.InsertedID, nil
 }
@@ -69,21 +69,21 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 	c.Echo().Validator = &userValidator{validator: v}
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind to user struct: %v", err)
-		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to parse the request payload"})
+		return c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to parse the request payload"})
 	}
 	if err := c.Validate(&user); err != nil {
-		log.Errorf("Unable to validate user struct: %v", err)
-		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to validate request payload"})
+		//log.Errorf("Unable to validate user struct: %v", err)
+		return c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to validate request payload"})
 	}
-	_, err := insertUser(context.Background(), user, h.Col)
+	_, err := insertUser(context.Background(), user, h.Col, c)
 	if err != nil {
-		log.Errorf("Unable to insert user: %v", err)
-		return c.JSON(err.Code, errorMassage{Message: "Unable to insert user"})
+		//log.Errorf("Unable to insert user: %v", err)
+		return err
 	}
 	token, err := user.createToken()
 	if err != nil {
-		log.Errorf("Unable to create token: %v", err)
-		return c.JSON(err.Code, errorMassage{Message: "Unable to create a token"})
+		log.Errorf("Unable to generate the token.")
+		return echo.NewHTTPError(http.StatusInternalServerError, errorMessage{Message: "Unable to generate the token"})
 	}
 	c.Response().Header().Set("x-auth-token", token)
 
@@ -145,21 +145,21 @@ func (h *UsersHandler) AthnUser(c echo.Context) error {
 	c.Echo().Validator = &userValidator{validator: v}
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind request payload. ")
-		return c.JSON(http.StatusUnprocessableEntity, errorMassage{Message: "Unable to bind request payload"})
+		return c.JSON(http.StatusUnprocessableEntity, errorMessage{Message: "Unable to bind request payload"})
 	}
 	if err := c.Validate(user); err != nil {
 		log.Errorf("Unable to validate request payload. ")
-		return c.JSON(http.StatusBadRequest, errorMassage{Message: "Unable to validate request payload"})
+		return c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to validate request payload"})
 	}
 	user, err := authenticateUser(context.Background(), user, h.Col)
 	if err != nil {
 		log.Errorf("Unable to athenticate user: %v", err)
-		return c.JSON(err.Code, errorMassage{Message: "Unable to athenticate user"})
+		return c.JSON(err.Code, errorMessage{Message: "Unable to athenticate user"})
 	}
 	token, err := user.createToken()
 	if err != nil {
 		log.Errorf("Unable to create token: %v", err)
-		return c.JSON(http.StatusInternalServerError, errorMassage{Message: "Unable to create a token"})
+		return c.JSON(http.StatusInternalServerError, errorMessage{Message: "Unable to create a token"})
 	}
 	c.Response().Header().Set("x-auth-token", token)
 
