@@ -74,7 +74,7 @@ func TestUsers(t *testing.T) {
 		con := e.NewContext(req, res)
 		uh.Col = usersCol
 		err := uh.CreateUser(con)
-		assert.Nil(t, err)
+		assert.NotNil(t, err)
 		assert.Equal(t, http.StatusBadRequest, err)
 	})
 

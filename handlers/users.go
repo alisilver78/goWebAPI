@@ -75,15 +75,15 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 		//log.Errorf("Unable to validate user struct: %v", err)
 		return c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to validate request payload"})
 	}
-	_, err := insertUser(context.Background(), user, h.Col, c)
+	user_id, err := insertUser(context.Background(), user, h.Col, c)
 	if err != nil {
 		//log.Errorf("Unable to insert user: %v", err)
-		return err
+		return c.JSON(http.StatusBadRequest, errorMessage{Message: "Unable to insert user"})
 	}
-	token, err := user.createToken()
-	if err != nil {
-		log.Errorf("Unable to generate the token.")
-		return echo.NewHTTPError(http.StatusInternalServerError, errorMessage{Message: "Unable to generate the token"})
+	token, tokenErr := user.createToken()
+	if tokenErr != nil {
+		log.Errorf("Unable to generate the token for %v with id %v: %v", user.Email, user_id, tokenErr)
+		return c.JSON(http.StatusInternalServerError, errorMessage{Message: "Unable to generate the token"})
 	}
 	c.Response().Header().Set("x-auth-token", token)
 
