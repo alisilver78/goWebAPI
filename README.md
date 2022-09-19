@@ -1,4 +1,6 @@
--Document fields--------------------------------------------------------------
+### Document fields
+
+
 User struct: //located in users.go
 {
 	Email    string 
