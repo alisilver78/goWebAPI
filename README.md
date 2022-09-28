@@ -56,5 +56,5 @@ validators.go: validator structs and methods for both users and products
 config.go: config properties and variable
 interface.go: CollectionAPI interface
 
------------------------------- **remaining tasks** ---------------------------------
-()create an admin user and add adminMiddleware to user endpoint
+remaining tasks :
+create an admin user and add adminMiddleware to user endpoint
